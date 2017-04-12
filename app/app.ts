@@ -18,11 +18,10 @@ const errorMiddleware = [
   RestErrorMiddleware.serializeRestError
 ];
 
-const app: Express = ExpressAppFactory.getExpressApp(apiRouter, null, errorMiddleware);
-
+const result = ExpressAppFactory.getExpressApp(apiRouter, null, errorMiddleware);
+const app: Express = result[0];
+const io = result[1];
 const rabbitClient = new RabbitClient('AURORA_GENERAL_EXCHANGE', 'AURORA_GENERAL');
-
-
 
 /**
  * Registration handler for new services
@@ -48,7 +47,16 @@ rabbitClient.rabbitConnection.handle('NEW_SERVICE', message => {
 
 rabbitClient.rabbitConnection.onUnhandled(message => {
     LOGGER.debug(message);
+});
+
+
+io.on('connection', socket => {
+  LOGGER.debug(socket.request.session);
+
+  //LOGGER.debug(socket);
+  io.emit('welcome', {'message': 'hello'});
 })
+
 app.listen(APP_CONFIG.port, () => {
   LOGGER.info(`Express server listening on port ${APP_CONFIG.port}.`);
 });

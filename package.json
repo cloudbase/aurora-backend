@@ -50,6 +50,7 @@
     "request": "^2.79.0",
     "sequelize": "^3.29.0",
     "serialize-error": "^2.0.0",
+    "socket.io": "^1.7.3",
     "winston": "2.2.0",
     "winston-logstash": "^0.3.0"
   },
@@ -62,6 +63,7 @@
     "@types/js-yaml": "^3.5.29",
     "@types/morgan": "1.7.32",
     "@types/request": "0.0.37",
+    "@types/socket.io": "^1.4.29",
     "@types/validator": "5.7.34",
     "@types/winston": "0.0.28",
     "concurrently": "3.1.0",
