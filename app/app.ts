@@ -1,5 +1,5 @@
 import { APP_CONFIG } from './config';
-import { Logger, LoggerFactory, RabbitClient } from './common';
+import { Logger, LoggerFactory, RabbitClient, SocketManager } from './common';
 import { Express, Router } from 'express';
 import { ExpressAppFactory } from './express-app-factory';
 import { ApiRouterFactory } from './api';
@@ -20,7 +20,7 @@ const errorMiddleware = [
 
 const result = ExpressAppFactory.getExpressApp(apiRouter, null, errorMiddleware);
 const app: Express = result[0];
-const io = result[1];
+const socketManager: SocketManager = result[1];
 const rabbitClient = new RabbitClient('AURORA_GENERAL_EXCHANGE', 'AURORA_GENERAL');
 
 /**
@@ -37,7 +37,7 @@ rabbitClient.rabbitConnection.handle('NEW_SERVICE', message => {
         })
         .catch(error => {
           LOGGER.error('Unable to mount new service service');
-          LOGGER.error(error)
+          LOGGER.error(error);
         });
   } catch (err) {
       LOGGER.debug(err);
@@ -49,13 +49,15 @@ rabbitClient.rabbitConnection.onUnhandled(message => {
     LOGGER.debug(message);
 });
 
+/**
+ * Handle updates from CORE Service and send notifications
+ */
+SocketManager.notifyClient.bind(socketManager.socketConnection);
+rabbitClient.rabbitConnection.handle('OPENSTACK_UPDATE', SocketManager.notifyClient);
 
-io.on('connection', socket => {
-  LOGGER.debug(socket.request.session);
 
-  //LOGGER.debug(socket);
-  io.emit('welcome', {'message': 'hello'});
-})
+SocketManager.connectionHandler.bind(socketManager.socketConnection);
+socketManager.socketConnection.on('connection', SocketManager.connectionHandler);
 
 app.listen(APP_CONFIG.port, () => {
   LOGGER.info(`Express server listening on port ${APP_CONFIG.port}.`);

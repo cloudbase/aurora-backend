@@ -1,6 +1,6 @@
 import { Express, Router, RequestHandler, ErrorRequestHandler } from 'express';
 import { Options, StreamOptions } from 'morgan';
-import { Logger, LoggerFactory, RedisClient } from './common';
+import { Logger, LoggerFactory, RedisClient, SocketManager } from './common';
 import { APP_CONFIG } from './config';
 import connectRedis = require('connect-redis');
 import { RabbitClient } from './common';
@@ -28,7 +28,6 @@ export class ExpressAppFactory {
     
     const app: Express = express();
     const server = http.Server(app);
-    const socketIo = io(server);
 
     app.use(bodyParser.urlencoded({ extended: true }));
     app.use(bodyParser.json());
@@ -55,10 +54,8 @@ export class ExpressAppFactory {
 
     const sessionMiddleware = expressSession(sessionOptions);
   
-    app.use(expressSession(sessionOptions));
-    socketIo.use((socket, next) => {
-      sessionMiddleware(socket.request, socket.request.res, next);
-    });
+    app.use(sessionMiddleware);
+    const socketManager: SocketManager = new SocketManager(server, sessionMiddleware);
 
     app.use(cors({
       origin: true,
@@ -106,7 +103,7 @@ export class ExpressAppFactory {
 
     // workaround to initial config in order to return configure socketIo object
     // needs refactoring
-    return [server, socketIo];
+    return [server, socketManager];
   }
 
 }
